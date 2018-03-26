@@ -24,11 +24,11 @@ module.exports = class JwtVerifier {
             .then(keyMap => this.decodeAndVerifyJwtTokenWithKeyMap(token, keyMap));
     }
 
-    decodeJwtToken(token) {
+    decodeJwtToken(token, options = { includeHeaders: false }) {
 
         console.info(`token = ${token}`);
 
-        const decodedJwtToken = jwt.decode(token, { complete: true });
+        const decodedJwtToken = jwt.decode(token, { complete: options.includeHeaders });
         console.info(`decodedJwtToken = ${JSON.stringify(decodedJwtToken)}`);
 
         return decodedJwtToken;
@@ -48,7 +48,7 @@ module.exports = class JwtVerifier {
 
         console.info(`keyMap = ${keyMap}, token = ${token}`);
 
-        const decodedJwtToken = this.decodeJwtToken(token);
+        const decodedJwtToken = this.decodeJwtToken(token, { includeHeaders: true });
         console.info(`decodedJwtToken = ${decodedJwtToken}`);
 
         const pem = keyMap[decodedJwtToken.header.kid];

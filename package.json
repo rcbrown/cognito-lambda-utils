@@ -25,7 +25,6 @@
   "devDependencies": {
     "chai": "^4.1.2",
     "mocha": "^5.0.4",
-    "pem2jwk": "^1.0.1",
-    "rsa-pem-to-jwk": "^1.1.3"
+    "pem-jwk": "^1.5.1"
   }
 }
