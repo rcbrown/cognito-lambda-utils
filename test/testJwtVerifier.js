@@ -122,11 +122,11 @@ describe('JwtVerifier', () => {
             // Change one character of the private key so that the public key no longer matches it
             const wonkyPrivatePem = testPrivatePem.replace(/0/, '1');
 
-            const token = sign({ foo: 'bar', exp: Date.now() / 1000 - 60 * 60 * 24 }, wonkyPrivatePem, { algorithm: 'RS256', keyid: kid });
+            const token = sign({ foo: 'bar' }, wonkyPrivatePem, { algorithm: 'RS256', keyid: kid });
 
             jwtVerifier.decodeAndVerifyJwtToken(token)
                 .then((result) => {
-                    done(Error('Should have thrown TokenExpiredError'));
+                    done(Error('Should have thrown JsonWebTokenError'));
                 })
                 .catch(e => assert.instanceOf(e, JsonWebTokenError))
                 .then(done, done);
