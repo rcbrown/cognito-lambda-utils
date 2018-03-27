@@ -1,10 +1,10 @@
 const fs = require('fs');
 const assert = require('chai').assert;
 
-const { sign, verify, TokenExpiredError, JsonWebTokenError } = require('jsonwebtoken');
+const { sign, verify } = require('jsonwebtoken');
 const { pem2jwk, jwk2pem } = require('pem-jwk');
 
-const JwtVerifier = require('../'); // Defaults to index.js
+const { JwtVerifier, TokenExpiredError, JsonWebTokenError } = require('../'); // Defaults to index.js
 
 describe('JwtVerifier', () => {
 
@@ -22,7 +22,7 @@ describe('JwtVerifier', () => {
 
     let jwtVerifier;
 
-    beforeEach('Initializing mock public key request', () => {
+    beforeEach('Initializing mock public key request', function() {
         jwtVerifier = new JwtVerifier('aUserPool', (url) => new Promise((resolve, reject) => {
 
             const mockPublicKeyResponse = JSON.stringify({
@@ -36,18 +36,20 @@ describe('JwtVerifier', () => {
 
     // Test suites
 
-    describe('pem <-> jwk conversion', () => {
+    describe('pem <-> jwk conversion', function() {
 
         [
             { privateDesc: 'original', publicDesc: 'original' },
             { privateDesc: 'reconstituted', publicDesc: 'original' },
             { privateDesc: 'original', publicDesc: 'reconstituted' },
             { privateDesc: 'reconstituted', publicDesc: 'reconstituted' }
-        ].forEach(spec => {
-            it(`${spec.publicDesc} public pem can verify what ${spec.privateDesc} private pem wrote`, () => {
+        ].forEach(function(spec) {
+            it(`${spec.publicDesc} public pem can verify what ${spec.privateDesc} private pem wrote`, function() {
 
-                const privatePem = spec.privateDesc === 'original' ? testPrivatePem : jwk2pem(pem2jwk(testPrivatePem));
-                const publicPem = spec.publicDesc === 'original' ? testPublicPem : jwk2pem(pem2jwk(testPublicPem));
+                const mapPem = (desc, originalPem) => desc === 'original' ? originalPem : jwk2pem(pem2jwk(originalPem));
+
+                const privatePem = mapPem(spec.privateDesc, testPrivatePem);
+                const publicPem = mapPem(spec.publicDesc, testPublicPem);
 
                 const token = sign({ foo: 'bar' }, privatePem, { algorithm: 'RS256', keyid: kid });
                 const verified = verify(token, publicPem);
@@ -57,9 +59,9 @@ describe('JwtVerifier', () => {
         });
     });
 
-    describe('instantiating', () => {
+    describe('instantiating', function() {
 
-        it('instantiates and loads keymap from mock', (done) => {
+        it('instantiates and loads keymap from mock', function(done) {
 
             jwtVerifier.publicKeysPromise
                 .then(keyMap => {
@@ -70,9 +72,9 @@ describe('JwtVerifier', () => {
         });
     });
 
-    describe('decoding', () => {
+    describe('decoding', function() {
 
-        it('decodes a token to a payload', () => {
+        it('decodes a token to a payload', function() {
 
             const token = sign({ foo: 'bar' }, testPrivatePem, { algorithm: 'RS256', keyid: kid });
 
@@ -81,9 +83,9 @@ describe('JwtVerifier', () => {
         });
     });
 
-    describe('verifying', () => {
+    describe('verifying', function() {
 
-        it('success with nonexpiring jwt', (done) => {
+        it('success with nonexpiring jwt', function(done) {
 
             const token = sign({ foo: 'bar' }, testPrivatePem, { algorithm: 'RS256', keyid: kid });
 
@@ -92,7 +94,7 @@ describe('JwtVerifier', () => {
                 .then(done, done);
         });
 
-        it('success with unexpired jwt', (done) => {
+        it('success with unexpired jwt', function(done) {
 
             // Expires 30s from now
 
@@ -103,7 +105,7 @@ describe('JwtVerifier', () => {
                 .then(done, done);
         });
 
-        it('error with expired jwt', (done) => {
+        it('error with expired jwt', function(done) {
 
             // Expired 24h ago
 
@@ -117,7 +119,7 @@ describe('JwtVerifier', () => {
                 .then(done, done);
         });
 
-        it('error with invalid pem', (done) => {
+        it('error with invalid pem', function(done) {
 
             // Change one character of the private key so that the public key no longer matches it
             const wonkyPrivatePem = testPrivatePem.replace(/0/, '1');
