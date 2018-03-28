@@ -11,7 +11,9 @@ module.exports = class JwtVerifier {
 
         const region = userPoolId.split('_')[0]; // I hope region will always be a prefix of userPoolId
 
-        const publicKeysUrl = `https://cognito-idp.${region}.amazonaws.com/${userPoolId}/.well-known/jwks.json`;
+        this.userPoolUrl = `https://cognito-idp.${region}.amazonaws.com/${userPoolId}`;
+
+        const publicKeysUrl = `${this.userPoolUrl}/.well-known/jwks.json`;
 
         this.publicKeysPromise = this.retrievePublicKeys(publicKeysUrl, request);
     }
@@ -37,6 +39,10 @@ module.exports = class JwtVerifier {
     decodeAndVerifyJwtTokenWithPem(token, pem) {
 
         console.info(`token = ${token}, pem = ${pem}`);
+
+        const decodedJwtToken = this.decodeJwtToken(token);
+
+        if (this.userPoolUrl !== decodedJwtToken.iss) throw new jwt.JsonWebTokenError(`User pool ${this.userPoolUrl} does not match issuer in claims: ${decodedJwtToken.iss}`);
 
         const claims = jwt.verify(token, pem, { algorithms: ['RS256'] });
         console.info(`claims = ${claims}`);

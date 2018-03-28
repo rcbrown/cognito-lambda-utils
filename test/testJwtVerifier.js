@@ -18,12 +18,18 @@ describe('JwtVerifier', () => {
     const testPrivatePem = fs.readFileSync('test/test.pem', { encoding: 'utf8', flags: 'r' });
     const kid = 'test';
 
+    function makeUserPoolUrl(region, userPoolId) { return `https://cognito-idp.${region}.amazonaws.com/${userPoolId}`; }
+
+    const region = 'us-east-1';
+    const userPoolId = `${region}_aUserPool`;
+    const userPoolUrl = makeUserPoolUrl(region, userPoolId);
+
     // Test initialization
 
     let jwtVerifier;
 
     beforeEach('Initializing mock public key request', function() {
-        jwtVerifier = new JwtVerifier('aUserPool', (url) => new Promise((resolve, reject) => {
+        jwtVerifier = new JwtVerifier(userPoolId, (url) => new Promise((resolve, reject) => {
 
             const mockPublicKeyResponse = JSON.stringify({
                 keys: [pem2jwk(testPublicPem, { kid })]
@@ -76,7 +82,7 @@ describe('JwtVerifier', () => {
 
         it('decodes a token to a payload', function() {
 
-            const token = sign({ foo: 'bar' }, testPrivatePem, { algorithm: 'RS256', keyid: kid });
+            const token = sign({ foo: 'bar', iss: userPoolUrl }, testPrivatePem, { algorithm: 'RS256', keyid: kid });
 
             const payload = jwtVerifier.decodeJwtToken(token);
             assert.propertyVal(payload, 'foo', 'bar');
@@ -87,7 +93,7 @@ describe('JwtVerifier', () => {
 
         it('success with nonexpiring jwt', function(done) {
 
-            const token = sign({ foo: 'bar' }, testPrivatePem, { algorithm: 'RS256', keyid: kid });
+            const token = sign({ foo: 'bar', iss: userPoolUrl }, testPrivatePem, { algorithm: 'RS256', keyid: kid });
 
             jwtVerifier.decodeAndVerifyJwtToken(token)
                 .then(payload => assert.propertyVal(payload, 'foo', 'bar'))
@@ -98,7 +104,7 @@ describe('JwtVerifier', () => {
 
             // Expires 30s from now
 
-            const token = sign({ foo: 'bar', exp: Date.now() / 1000 + 30 }, testPrivatePem, { algorithm: 'RS256', keyid: kid });
+            const token = sign({ foo: 'bar', iss: userPoolUrl, exp: Date.now() / 1000 + 30 }, testPrivatePem, { algorithm: 'RS256', keyid: kid });
 
             jwtVerifier.decodeAndVerifyJwtToken(token)
                 .then(payload => assert.propertyVal(payload, 'foo', 'bar'))
@@ -109,7 +115,7 @@ describe('JwtVerifier', () => {
 
             // Expired 24h ago
 
-            const token = sign({ foo: 'bar', exp: Date.now() / 1000 - 60 * 60 * 24 }, testPrivatePem, { algorithm: 'RS256', keyid: kid });
+            const token = sign({ foo: 'bar', iss: userPoolUrl, exp: Date.now() / 1000 - 60 * 60 * 24 }, testPrivatePem, { algorithm: 'RS256', keyid: kid });
 
             jwtVerifier.decodeAndVerifyJwtToken(token)
                 .then((result) => {
@@ -124,7 +130,7 @@ describe('JwtVerifier', () => {
             // Change one character of the private key so that the public key no longer matches it
             const wonkyPrivatePem = testPrivatePem.replace(/0/, '1');
 
-            const token = sign({ foo: 'bar' }, wonkyPrivatePem, { algorithm: 'RS256', keyid: kid });
+            const token = sign({ foo: 'bar', iss: userPoolUrl }, wonkyPrivatePem, { algorithm: 'RS256', keyid: kid });
 
             jwtVerifier.decodeAndVerifyJwtToken(token)
                 .then((result) => {
@@ -133,5 +139,17 @@ describe('JwtVerifier', () => {
                 .catch(e => assert.instanceOf(e, JsonWebTokenError))
                 .then(done, done);
         });
+
+        it('error with wrong user pool', function(done) {
+
+            const token = sign({ foo: 'bar', iss: makeUserPoolUrl(region, `${region}_anotherUserPool`) }, testPrivatePem, { algorithm: 'RS256', keyid: kid });
+
+            jwtVerifier.decodeAndVerifyJwtToken(token)
+                .then((result) => {
+                    done(Error('Should have thrown JsonWebTokenError'));
+                })
+                .catch(e => assert.instanceOf(e, JsonWebTokenError))
+                .then(done, done);
+        })
     });
 });
