@@ -44,6 +44,8 @@ module.exports = class JwtVerifier {
 
         if (this.userPoolUrl !== decodedJwtToken.iss) throw new jwt.JsonWebTokenError(`User pool ${this.userPoolUrl} does not match issuer in claims: ${decodedJwtToken.iss}`);
 
+        if ('id' !== decodedJwtToken.token_use) throw new jwt.JsonWebTokenError(`JWT token_use must be 'id', not ${decodedJwtToken.token_use}`);
+
         const claims = jwt.verify(token, pem, { algorithms: ['RS256'] });
         console.info(`claims = ${claims}`);
 
