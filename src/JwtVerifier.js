@@ -3,7 +3,7 @@ const jwkToPem = require('jwk-to-pem');
 const requestPromise = require('request-promise');
 
 // const console = console;
-const console = { info: () => {} };
+const console = { info: () => {}, error: () => {} };
 
 module.exports = class JwtVerifier {
 
