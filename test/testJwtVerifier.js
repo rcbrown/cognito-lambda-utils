@@ -6,7 +6,7 @@ const { pem2jwk, jwk2pem } = require('pem-jwk');
 
 const { JwtVerifier, TokenExpiredError, JsonWebTokenError } = require('../'); // Defaults to index.js
 
-describe('JwtVerifier', () => {
+describe('JwtVerifier', function() {
 
     // Fixtures
     //
@@ -170,7 +170,6 @@ describe('JwtVerifier', () => {
                 })
                 .catch(e => assert.instanceOf(e, JsonWebTokenError))
                 .then(done, done);
-
         });
     });
 });
